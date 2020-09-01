@@ -21,6 +21,7 @@ Used libraries are loaded here, as well as the dataset from the csv file: wineQu
 
 ```{r, echo=FALSE, results="hide", include=FALSE}
 library(purrr)
+library(plyr)
 library(magrittr)
 library(tidyr)
 library(ggplot2)
@@ -62,6 +63,20 @@ Names of the columns
 
 ```{r, echo=FALSE}
 names(mydata)
+## for lazy labels
+
+lazy.labels <- list(fixed.acidity = "fixed acidity (tartaric acid - g/dm^3)",
+                 volatile.acidity = "volatile acidity (acetic acid - g / dm^3)",
+                 citric.acid = "citric acid (g / dm^3)",
+                 residual.sugar = "residual sugar (g / dm^3)",
+                 chlorides = "chlorides (sodium chloride - g / dm^3",
+                 free.sulfur.dioxide = "free sulfur dioxide (mg / dm^3)",
+                 total.sulfur.dioxide= "total sulfur dioxide (mg / dm^3)" ,
+                 density  = "density (g / cm^3)",
+                 pH = "pH",
+                 sulphates ="sulphates (potassium sulphate - g / dm3)",
+                 alcohol = "alcohol (% by volume)",
+                 quality = "quality (score between 0 and 10)")
 ```
 
 Statistical summary
@@ -91,15 +106,24 @@ Output variable (based on sensory data):
 ### histograms
 <!-- histograms Adapted from: -->
 <!-- https://drsimonj.svbtle.com/quick-plot-of-all-variables -->
-
+<!-- label function Adapted from: -->
+<!-- https://stackoverflow.com/questions/3472980/how-to-change-facet-labels -->
 ```{r, echo=FALSE, fig.width = 20, fig.heigth = 20}
+wine_labeller <- function(variable,value){
+  return(lazy.labels[value])
+}
+```  
+
+```{r, echo=FALSE, fig.width = 20, fig.heigth = 20}  
 mydata[2:13] %>%
   keep(is.numeric) %>% 
-  gather() %>% 
+  gather() %>%
   ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram(bins = 20) 
+  facet_wrap(~ key, scales = "free", labeller=wine_labeller) +
+  geom_histogram(bins = 20) 
 ```
+
+
 
 Here we can notice some things:
 volatile.acidity: seems inversely correlated to quality, skewed to the left
@@ -237,11 +261,24 @@ as these are logically valid (ie when more acid, pH goes down)
 **boxplots:**
 
 ```{r, echo=FALSE}
-ggplot(data = mydata, mapping = aes(x = quality, y = volatile.acidity, fill=quality, group=quality)) +
-    geom_boxplot() + geom_jitter(width=0.1,alpha=0.2) 
+lazy.labels[["quality"]]
+```
 
-ggplot(data = mydata, mapping = aes(x = quality, y = alcohol, fill=quality, group=quality)) +
-    geom_boxplot() + geom_jitter(width=0.1,alpha=0.2)
+```{r, echo=FALSE}
+
+ggplot(data = mydata, mapping = aes(x = quality, y = volatile.acidity, 
+                                    fill=quality, group=quality)) +
+  geom_boxplot() + 
+  geom_jitter(width=0.1,alpha=0.2) +
+  ylab(lazy.labels[["volatile.acidity"]]) +
+  xlab(lazy.labels[["quality"]]) 
+ 
+ggplot(data = mydata, mapping = aes(x = quality, y = alcohol, 
+                                    fill=quality, group=quality)) +
+    geom_boxplot() + 
+  geom_jitter(width=0.1,alpha=0.2) +
+  ylab(lazy.labels[["alcohol"]]) +
+  xlab(lazy.labels[["quality"]]) 
 
 ```  
   
@@ -278,7 +315,9 @@ the strongest correlations found are:
 ggplot(mydata, aes(alcohol, density, color = (factor(quality)))) +
   geom_point() +
   theme_minimal() + 
-  scale_color_brewer(type = 'div', palette = "Spectral", direction = 1) 
+  scale_color_brewer(type = 'div', palette = "Spectral", direction = 1)  +
+  ylab(lazy.labels[["density"]]) +
+  xlab(lazy.labels[["alcohol"]]) 
 ```
   
 This one does not seem to show much extra.
@@ -290,7 +329,9 @@ ggplot(mydata, aes(alcohol, volatile.acidity, color = factor(quality))) +
   geom_point() +
   theme_minimal() +
   theme_minimal() + 
-  scale_color_brewer(type = 'div', palette = "Spectral", direction=1)
+  scale_color_brewer(type = 'div', palette = "Spectral", direction=1)  +
+  ylab(lazy.labels[["volatile.acidity"]]) +
+  xlab(lazy.labels[["alcohol"]]) 
 ```
   
 Here can be nicely seen that top left has a tendency for lesser quality and low right a tendency for better quality.
@@ -303,7 +344,9 @@ ggplot(mydata, aes(fixed.acidity, density, color = factor(quality))) +
   geom_point() +
   theme_minimal() +
   theme_minimal() + 
-  scale_color_brewer(type = 'div', palette = "Spectral", direction=1)
+  scale_color_brewer(type = 'div', palette = "Spectral", direction=1)  +
+  ylab(lazy.labels[["density"]]) +
+  xlab(lazy.labels[["fixed.acidity"]]) 
 ``` 
   
 This does not seem to show much in sense of order.
@@ -325,15 +368,20 @@ mydata[2:13] %>%
   keep(is.numeric) %>% 
   gather() %>% 
   ggplot(aes(value)) +
-    facet_wrap(~ key, scales = "free") +
-    geom_histogram(bins = 20) + ggtitle("Histograms")
+  facet_wrap(~ key, scales = "free", labeller=wine_labeller) +
+  geom_histogram(bins = 20) + 
+  ggtitle("Histograms")
 ```
 This plot shows nicely the distribution of the variables. It also shows the limited anmount of data on the low and high quality side of the quality spectrum, which makes it difficult to find strong correlations.
 
 ### Plot 2: Boxplot Alcohol and quality
 ```{r, echo=FALSE}
-ggplot(data = mydata, mapping = aes(x = quality, y = alcohol, fill=quality, group=quality)) +
-    geom_boxplot() + geom_jitter(width=0.1,alpha=0.2) + ggtitle("Boxplot Alcohol and quality")
+ggplot(data = mydata, mapping = aes(x = quality, y = alcohol, 
+                                    fill=quality, group=quality)) +
+  geom_boxplot() + geom_jitter(width=0.1,alpha=0.2) + 
+  ggtitle("Boxplot Alcohol and quality") +
+  ylab(lazy.labels[["alcohol"]]) +
+  xlab(lazy.labels[["quality"]]) 
 ```
 This plot shows a clear correlation between the alcohol content and the quality (be aware, correlation is not necessarily causation)
 
@@ -345,7 +393,9 @@ ggplot(mydata, aes(alcohol, volatile.acidity, color = factor(quality))) +
   theme_minimal() +
   theme_minimal() + 
   scale_color_brewer(type = 'div', palette = "Spectral", direction=1)  + 
-  ggtitle("scatterplot volatile.acidity/Quality/Alcohol")
+  ggtitle("scatterplot volatile.acidity/Quality/Alcohol")  +
+  ylab(lazy.labels[["volatile.acidity"]]) +
+  xlab(lazy.labels[["alcohol"]]) 
 ```
   
 Here can be nicely seen that top left has a tendency for lesser quality and low right a tendency for better quality.  
